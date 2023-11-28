@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        #root {
+            position: relative;
+            width: 1000;
+            height: 100vh;
+            background-color: #000000;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+    <!DOCTYPE html>
+    <html>
+
+    <head>
+    </head>
+
+<body>
+    <div id="root">
+        <canvas id="canvas"></canvas>
+    </div>
+    <script>
+        const root = document.getElementById("root");
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+
+        canvas.width = root.clientWidth;
+        canvas.height = root.clientHeight;
+
+        class Plane {
+            constructor(context) {
+                this.width = 75
+                this.height = 100
+                this.x = canvas.width / 2
+                this.y = canvas.height - 120
+                this.speedX = 30;
+                this.speedY = 30;
+                this.ctx = context
+                this.image = new Image(this.width, this.height)
+                this.image.src = "airplane.png"
+            }
+            draw() {
+                this.ctx.drawImage(this.image, this.x, this.y)
+            }
+            move(key) {
+                switch (key) {
+                    case "ArrowLeft":
+                        if (this.x > 0) {
+                            this.x -= this.speedX
+                            if (this.x < 0) {
+                                this.x = 0
+                            }
+                        }
+                        break;
+                    case "ArrowRight":
+                        if (this.x < canvas.width - this.width) {
+                            this.x += this.speedX;
+                            if (this.x > canvas.width - this.width) {
+                                this.x = canvas.width - this.width
+                            }
+                        }
+                        break;
+                    case "ArrowUp":
+                        if (this.y > 0) {
+                            this.y -= this.speedY;
+                        }
+                        break;
+                    case "ArrowDown":
+                        if (this.y < canvas.height - this.height) {
+                            this.y += this.speedY;
+                        }
+                        break;
+                }
+            }
+            getCenter() {
+                return {
+                    x: this.x + this.width / 2,
+                    y: this.y + this.height / 2
+                }
+            }
+
+        }
+
+        document.addEventListener("keydown", (event) => {
+            airplane.move(event.key)
+        });
+
+        class AstroObject {
+            constructor(context) {
+                this.startX = Math.round(Math.random() * canvas.width);
+                this.endY = canvas.height;
+                this.ctx = context
+            }
+            move() {
+                this.startY += this.speed
+            }
+            check() {
+                if (this.startY >= canvas.height) {
+                    this.startY = 0;
+                    this.startX = Math.round(Math.random() * canvas.width);
+                }
+            }
+        }
+
+        class Star extends AstroObject {
+            constructor(context) {
+                super(context)
+                this.startY = Math.round(Math.random() * canvas.height);
+                this.radius = Math.floor(Math.random() * 3 + 1);
+                this.opacity = Math.random();
+                this.speed = Math.random() / 2;
+            }
+            draw() {
+                this.ctx.beginPath();
+                this.ctx.arc(this.startX, this.startY, this.radius, 0, 2 * Math.PI);
+                this.ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                this.ctx.fill();
+            }
+        }
+
+        class Meteor extends AstroObject {
+            constructor(context) {
+                super(context)
+                this.startY = 50;
+                this.radius = Math.floor(Math.random() * 10 + 25);
+                this.speed = (Math.random() + 3) / 4;
+                this.image = new Image(this.radius * 2, this.radius * 2)
+                this.image.src = "meteor.png"
+            }
+            draw() {
+                this.ctx.drawImage(this.image, this.startX, this.startY, this.radius * 2, this.radius * 2)
+            }
+        }
+
+        class Bomb {
+            constructor(context) {
+                this.image = new Image(this.width, this.height)
+                this.width = 200
+                this.height = 200
+                this.image.src = "boom.png"
+                this.ctx = context
+            }
+            draw(center) {
+                this.ctx.drawImage(this.image, center.x - this.width / 2, center.y - this.height / 2, this.width, this.height)
+            }
+
+        }
+
+
+        const stars = [];
+        const meteors = []
+        const numberOfStars = 400;
+        const numberOfMeteors = 20
+
+        for (let i = 0; i < numberOfStars; i++) {
+            stars.push(new Star(context));
+        }
+        const timer = setInterval(() => {
+            meteors.push(new Meteor(context));
+            if (meteors.length === 20) {
+                clearInterval(timer)
+            }
+        }, 500)
+
+        const airplane = new Plane(context)
+
+        const boom = new Bomb(context)
+
+        function draw() {
+            context.clearRect(0, 0, canvas.width, canvas.height);
+
+
+
+            for (let i = 0; i < stars.length; i++) {
+                const star = stars[i];
+                star.move()
+                star.check()
+                star.draw()
+            }
+
+            for (let i = 0; i < meteors.length; i++) {
+                const meteor = meteors[i];
+                meteor.move()
+                meteor.check()
+                meteor.draw()
+            }
+
+            airplane.draw()
+
+            let crash = false
+
+                for (let i = 0; i < meteors.length; i++) {
+                    if (
+                        meteors[i].startX + meteors[i].radius > airplane.x &&
+                        meteors[i].startX < airplane.x + airplane.width
+                    )
+                    {   
+                        console.log("crash x")
+                        if (
+                            meteors[i].startY + meteors[i].radius > airplane.y &&
+                            meteors[i].startY < airplane.y + airplane.height
+                        ) {
+                            crash = true;
+                        }
+                    }
+                }
+    
+            if (!crash) {
+                requestAnimationFrame(draw)
+            } else {
+                boom.draw(airplane.getCenter())
+            }
+
+        }
+
+        draw();
+
+    </script>
+</body>
+
+</html>
